@@ -17,6 +17,7 @@ start:
 %include "a20.asm"
 %include "io.asm"
 %include "string.asm"
+%include "video.asm"
 
 Stage2:
     mov     si, msg_stage2              ; Print stage 2 message
@@ -34,33 +35,21 @@ Stage2:
 
     call    Console_Write_CRLF
 
-Input:
-    mov     si, cursor
-    call    Console_Write_16
+    ; Switch video mode to VGA
+    xor     ah, ah
+    mov     al, 13h
+    int     10h
 
-    mov     si, i_buff
-    call    Console_ReadLine
+    push    200
+    push    200
+    push    100
+    push    100
+    push    14
 
-    ; Integer To String testing
-    ;
-    ; vv Integer to Decimal string vv
-    mov     si, o_buff
-    mov     ax, 12345
-    call    To_String_Dec
+    call    Plot_Line
 
-    mov     si, o_buff
-    call    Console_WriteLine
-
-    ; vv Integer to Hexadecimal string vv
-    mov     bx, 0AB12h
-    call    Console_WriteHex
-    call    Console_Write_CRLF
-    ;
-    ; End of Integer to String testing
-
-    jmp Input
-
-    hlt
+End_Loop:
+    jmp End_Loop
 
 A20_Fail:
     hlt                                 ; Could not enable A20 line, halt here
