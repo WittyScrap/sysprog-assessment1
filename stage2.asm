@@ -40,13 +40,8 @@ Stage2:
     mov     al, 13h
     int     10h
 
-    push    50
-    push    50
-    push    100
-    push    100
-    push    14
-
-    call    Plot_Line
+    mov     ax, 15
+    call    Plot_Crosshair
 
 End_Loop:
     jmp End_Loop

@@ -1,8 +1,4 @@
-%macro abs 2
-    mov     %2, %1
-    neg     %1
-    cmovl   %1, %2
-%endmacro
+%include "macros.asm"
 
 ; Plots a single pixel of a specified color.
 ;
@@ -22,11 +18,11 @@ Plot_Point:
 ;
 ; Input size: 16
 ; Input: 
-;       Color code
-;       x0
-;       y0
-;       x1
 ;       y1
+;       x1
+;       y0
+;       x0
+;       Color
 Plot_Line:
     ; Stack Frame Layout:
     ; 
@@ -65,21 +61,16 @@ Plot_Line:
     sub     di, [bp + 8]
     abs     di, ax                  ; DY
 
-    mov     bx, 1
-    mov     cx, -1
-
     ; if x0 < x1 then sx := 1 else sx := -1
-    mov     ax, [bp + 6]            ; x0
-    sub     ax, [bp + 10]           ; x1
-    cmovl   ax, bx
-    cmovg   ax, cx
+    mov     ax, [bp + 10]           ; x1
+    sub     ax, [bp + 6]            ; x0
+    sign    ax, 16
     mov     [bp - 10], ax           ; [bp - 2] = SX
 
     ; if y0 < y1 then sy := 1 else sy := -1
-    mov     ax, [bp + 8]            ; y0
-    sub     ax, [bp + 12]           ; y1
-    cmovl   ax, bx
-    cmovg   ax, cx
+    mov     ax, [bp + 12]           ; y1
+    sub     ax, [bp + 8]            ; y0
+    sign    ax, 16
     mov     [bp - 12], ax           ; [bp - 4] = SY
 
     ; err := dx - dy
@@ -102,7 +93,7 @@ Plot_Line_loop:
     cmp     dx, [bp + 12]
     jne     Plot_Line_cont
     
-    sub     sp, 6                   ; Clear local variables
+    add     sp, 6                   ; Clear local variables
 
     pop     dx
     pop     cx
@@ -111,7 +102,6 @@ Plot_Line_loop:
 
     mov     sp, bp
     pop     bp
-    add     sp, 12                  ; Restore stack pointer
 
     ret
 
@@ -150,3 +140,29 @@ Plot_Line_cont:
     add     dx, ax
 
     jmp     Plot_Line_loop
+
+
+; Draws a crosshair that splits the screen
+; into 4 quadrants.
+;
+; Input: AX contains the color of the crosshair.
+Plot_Crosshair:
+    push    199
+    push    319
+    push    0
+    push    0
+    push    ax
+
+    call    Plot_Line
+
+    clear   5, 16
+
+    push    0
+    push    319
+    push    199
+    push    0
+    push    ax
+
+    call    Plot_Line
+
+    ret
