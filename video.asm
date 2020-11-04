@@ -37,14 +37,23 @@ Plot_Line:
     ; BP + 4   <- Color
     ; BP + 2   <- Ret Addr
     ; BP       <- BP
-    ; BP - 2   <- SX
-    ; BP - 4   <- SY
-    ; BP - 6   <- ERR
+    ; BP - 2   <- AX backup
+    ; BP - 4   <- BX backup
+    ; BP - 6   <- CX backup
+    ; BP - 8   <- DX backup
+    ; BP - 10  <- SX
+    ; BP - 12  <- SY
+    ; BP - 14  <- ERR
 
     push    bp
     mov     bp, sp
 
-    add     sp, 6
+    push    ax
+    push    bx
+    push    cx
+    push    dx
+
+    sub     sp, 6
 
     ; dx := abs(x1 - x0)
     mov     si, [bp + 10]
@@ -56,73 +65,88 @@ Plot_Line:
     sub     di, [bp + 8]
     abs     di, ax                  ; DY
 
+    mov     bx, 1
+    mov     cx, -1
+
     ; if x0 < x1 then sx := 1 else sx := -1
     mov     ax, [bp + 6]            ; x0
-    cmp     [bp + 10], ax           ; x1
-    lahf
-    and     ax, 8000h               ; 8000h = 1 << 15
-    shr     ax, 15
-    sub     ax, 1
-    mov     [bp - 2], ax            ; [bp - 2] = SX
+    sub     ax, [bp + 10]           ; x1
+    cmovl   ax, bx
+    cmovg   ax, cx
+    mov     [bp - 10], ax           ; [bp - 2] = SX
 
     ; if y0 < y1 then sy := 1 else sy := -1
     mov     ax, [bp + 8]            ; y0
-    cmp     [bp + 12], ax           ; y1
-    lahf
-    and     ax, 8000h               ; 8000h = 1 << 15
-    shr     ax, 15
-    sub     ax, 1
-    mov     [bp - 4], ax            ; [bp - 4] = SY
+    sub     ax, [bp + 12]           ; y1
+    cmovl   ax, bx
+    cmovg   ax, cx
+    mov     [bp - 12], ax           ; [bp - 4] = SY
 
     ; err := dx - dy
-    mov     [bp - 6], si
-    sub     [bp - 6], di
+    mov     [bp - 14], si
+    sub     [bp - 14], di
 
     mov     cx, [bp + 6]            ; Startup at x0
     mov     dx, [bp + 8]            ; Startup at y0
-    mov     al, [bp + 4]            ; Line color
-    mov     ah, 0Ch
 
 Plot_Line_loop:
+    mov     ah, 0Ch
+    mov     al, [bp + 4]            ; Line color
     mov     bh, 0
-    pop     ax
-    int     10h                     ; Plot point
 
-    push    ax
-    xor     ax, ax
+    int     10h                     ; Plot point
 
     ; if x0 = x1 and y0 = y1 break
     cmp     cx, [bp + 10]
     jne     Plot_Line_cont
     cmp     dx, [bp + 12]
     jne     Plot_Line_cont
-    jmp     Plot_Line_endloop
+    
+    sub     sp, 6                   ; Clear local variables
 
-Plot_Line_cont:
-    shl     word[bp - 6], 1         ; Here we multiply err by 2
-    push    di
-    neg     di
-    cmp     [bp - 6], di
-    shr     word[bp - 6], 1
-    pop     di
-    cmovg   ax, di
-    sub     [bp - 6], ax
-    mov     ax, 0
-    cmovg   ax, [bp - 2]
-    add     cx, ax
+    pop     dx
+    pop     cx
+    pop     bx
+    pop     ax
 
-    shl     word[bp - 6], 1         ; Here we multiply err by 2
-    cmp     [bp - 6], si 
-    shr     word[bp - 6], 1
-    mov     ax, 0
-    cmovl   ax, si
-    add     [bp - 6], ax
-    mov     ax, 0
-    cmovl   ax, [bp - 4]
-    add     dx, ax
-
-Plot_Line_endloop:
     mov     sp, bp
     pop     bp
+    add     sp, 12                  ; Restore stack pointer
 
     ret
+
+Plot_Line_cont:
+    xor     ax, ax
+
+    ; e2 := 2 * err
+    mov     bx, [bp - 14]
+    shl     bx, 1                   ; Here we multiply err by 2
+
+    ; if e2 > -dy then
+    ;   err := err - dy
+    ;   x0 := x0 + sx
+    ; end
+    neg     di
+    cmp     bx, di
+    cmovg   ax, di
+    add     [bp - 14], ax
+    mov     ax, 0
+    cmp     bx, di
+    cmovg   ax, [bp - 10]
+    neg     di
+    add     cx, ax
+
+    ; if e2 < dx then
+    ;   err := err + dx
+    ;   y0 := y0 + sy
+    ; end
+    cmp     bx, si
+    mov     ax, 0
+    cmovl   ax, si
+    add     [bp - 14], ax
+    mov     ax, 0
+    cmp     bx, si
+    cmovl   ax, [bp - 12]
+    add     dx, ax
+
+    jmp     Plot_Line_loop

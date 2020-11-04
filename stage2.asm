@@ -40,8 +40,8 @@ Stage2:
     mov     al, 13h
     int     10h
 
-    push    200
-    push    200
+    push    50
+    push    50
     push    100
     push    100
     push    14
