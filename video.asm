@@ -6,9 +6,37 @@
 ;        CX contains the pixel's X coordinate.
 ;        DX contains the pixel's Y coordinate.
 Plot_Point:
-    mov     ah, 0Ch
-    mov     bh, 0
-    int     10h
+    push    ds
+    push    si
+
+    mov     si, 320
+
+    cmp     cx, si
+    cmovg   cx, si
+    mov     si, cx
+    sar     si, 15
+    not     si
+    and     cx, si
+    
+    mov     si, 200
+
+    cmp     dx, si
+    cmovg   dx, si
+    mov     si, dx
+    sar     si, 15
+    not     si
+    and     dx, si
+
+    mov     bx, 0xA000               ; Video memory start addr
+    mov     ds, bx
+
+    imul    bx, dx, 320
+    add     bx, cx
+    
+    mov     byte[ds:bx], al
+
+    pop     si
+    pop     ds
 
     ret
 
@@ -147,22 +175,27 @@ Plot_Line_cont:
 ;
 ; Input: AX contains the color of the crosshair.
 Plot_Crosshair:
-    push    199
-    push    319
-    push    0
-    push    0
-    push    ax
+    ; push    199
+    ; push    319
+    ; push    0
+    ; push    0
+    ; push    ax
 
-    call    Plot_Line
+    ; call    Plot_Line
 
-    clear   5, 16
+    ; clear   5, 16
 
-    push    0
-    push    319
-    push    199
-    push    0
-    push    ax
+    ; push    0
+    ; push    319
+    ; push    199
+    ; push    0
+    ; push    ax
 
-    call    Plot_Line
+    ; call    Plot_Line
+
+    mov     cx, 10
+    mov     dx, 10
+
+    call    Plot_Point
 
     ret
