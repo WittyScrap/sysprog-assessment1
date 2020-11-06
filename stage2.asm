@@ -43,6 +43,8 @@ Stage2:
     mov     ax, 15
     call    Plot_Crosshair
 
+    call    Demo_Lines
+
 End_Loop:
     jmp End_Loop
 

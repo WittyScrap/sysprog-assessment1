@@ -106,7 +106,11 @@ Plot_Line_loop:
     imul    bx, dx, 320
     add     bx, cx
     
-    ; Clamp values between 0 and video block size
+    ; Clamp values between 0 and video block size.
+    ; This will allow X values greater than the
+    ; screen width to appear to overflow back to
+    ; the other side of the screen, since video
+    ; memory is a contiguous block.
     mov     ax, 320 * 200
     cmp     bx, ax
     cmova   bx, ax                  ; "above" is an unsigned condition, -1 compared to 64000
@@ -178,5 +182,22 @@ Plot_Line_cont:
 Plot_Crosshair:
     line    0, 99, 319, 99, ax
     line    159, 0, 159, 199, ax
+
+    ret
+
+
+; Demonstrates usage of the line drawing function.
+; 8 lines will be drawn on the top-left quadrant.
+;
+; Input: None
+Demo_Lines:
+    line    0, 0, 159, 99, 1
+    line    159, 0, 0, 99, 2
+    line    79, 0, 79, 99, 3
+    line    0, 49, 159, 49, 4
+    line    39, 0, 119, 99, 5
+    line    119, 0, 39, 99, 6
+    line    0, 24, 159, 74, 7
+    line    0, 74, 159, 24, 8
 
     ret
