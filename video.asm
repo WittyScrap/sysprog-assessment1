@@ -176,22 +176,7 @@ Plot_Line_cont:
 ;
 ; Input: AX contains the color of the crosshair.
 Plot_Crosshair:
-    push    199
-    push    319
-    push    0
-    push    0
-    push    ax
-
-    call    Plot_Line
-
-    clear   5, 16
-
-    push    0
-    push    319
-    push    199
-    push    0
-    push    ax
-
-    call    Plot_Line
+    line    0, 99, 319, 99, ax
+    line    159, 0, 159, 199, ax
 
     ret

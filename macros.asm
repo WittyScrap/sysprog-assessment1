@@ -12,3 +12,13 @@
 %macro clear 2
     add     sp, %1 * (%2 / 8)
 %endmacro
+
+%macro line 5
+    push    %4
+    push    %3
+    push    %2
+    push    %1
+    push    %5
+    call    Plot_Line
+    clear   5, 16
+%endmacro
