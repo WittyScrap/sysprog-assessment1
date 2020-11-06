@@ -9,29 +9,15 @@ Plot_Point:
     push    ds
     push    si
 
-    mov     si, 320
-
-    cmp     cx, si
-    cmovg   cx, si
-    mov     si, cx
-    sar     si, 15
-    not     si
-    and     cx, si
-    
-    mov     si, 200
-
-    cmp     dx, si
-    cmovg   dx, si
-    mov     si, dx
-    sar     si, 15
-    not     si
-    and     dx, si
-
-    mov     bx, 0xA000               ; Video memory start addr
+    mov     bx, 0xA000              ; Video memory start addr
     mov     ds, bx
 
     imul    bx, dx, 320
     add     bx, cx
+    
+    mov     si, 320 * 200           ; 64,000
+    cmp     bx, si
+    cmova   bx, si
     
     mov     byte[ds:bx], al
 
@@ -65,9 +51,11 @@ Plot_Line:
     ; BP - 4   <- BX backup
     ; BP - 6   <- CX backup
     ; BP - 8   <- DX backup
-    ; BP - 10  <- SX
-    ; BP - 12  <- SY
-    ; BP - 14  <- ERR
+    ; BP - 10  <- DS backup
+    ; BP - 12  <- SI backup
+    ; BP - 14  <- SX
+    ; BP - 16  <- SY
+    ; BP - 18  <- ERR
 
     push    bp
     mov     bp, sp
@@ -76,8 +64,13 @@ Plot_Line:
     push    bx
     push    cx
     push    dx
+    push    ds
+    push    si
 
     sub     sp, 6
+
+    mov     bx, 0xA000              ; Set segment to video memory address (0000A000 * 16 = 000A0000)
+    mov     ds, bx
 
     ; dx := abs(x1 - x0)
     mov     si, [bp + 10]
@@ -93,27 +86,33 @@ Plot_Line:
     mov     ax, [bp + 10]           ; x1
     sub     ax, [bp + 6]            ; x0
     sign    ax, 16
-    mov     [bp - 10], ax           ; [bp - 2] = SX
+    mov     [bp - 14], ax           ; SX
 
     ; if y0 < y1 then sy := 1 else sy := -1
     mov     ax, [bp + 12]           ; y1
     sub     ax, [bp + 8]            ; y0
     sign    ax, 16
-    mov     [bp - 12], ax           ; [bp - 4] = SY
+    mov     [bp - 16], ax           ; SY
 
     ; err := dx - dy
-    mov     [bp - 14], si
-    sub     [bp - 14], di
+    mov     [bp - 18], si
+    sub     [bp - 18], di
 
     mov     cx, [bp + 6]            ; Startup at x0
     mov     dx, [bp + 8]            ; Startup at y0
 
 Plot_Line_loop:
-    mov     ah, 0Ch
-    mov     al, [bp + 4]            ; Line color
-    mov     bh, 0
-
-    int     10h                     ; Plot point
+    ; Retrieve offset from X and Y (Y * 320) + X
+    imul    bx, dx, 320
+    add     bx, cx
+    
+    ; Clamp values between 0 and video block size
+    mov     ax, 320 * 200
+    cmp     bx, ax
+    cmova   bx, ax                  ; "above" is an unsigned condition, -1 compared to 64000
+    mov     ax, [bp + 4]            ; still results "above" since -1 is really FFFF.
+    
+    mov     byte[ds:bx], al         ; Plot point
 
     ; if x0 = x1 and y0 = y1 break
     cmp     cx, [bp + 10]
@@ -123,6 +122,8 @@ Plot_Line_loop:
     
     add     sp, 6                   ; Clear local variables
 
+    pop     si
+    pop     ds
     pop     dx
     pop     cx
     pop     bx
@@ -137,7 +138,7 @@ Plot_Line_cont:
     xor     ax, ax
 
     ; e2 := 2 * err
-    mov     bx, [bp - 14]
+    mov     bx, [bp - 18]
     shl     bx, 1                   ; Here we multiply err by 2
 
     ; if e2 > -dy then
@@ -147,10 +148,10 @@ Plot_Line_cont:
     neg     di
     cmp     bx, di
     cmovg   ax, di
-    add     [bp - 14], ax
+    add     [bp - 18], ax
     mov     ax, 0
     cmp     bx, di
-    cmovg   ax, [bp - 10]
+    cmovg   ax, [bp - 14]
     neg     di
     add     cx, ax
 
@@ -161,10 +162,10 @@ Plot_Line_cont:
     cmp     bx, si
     mov     ax, 0
     cmovl   ax, si
-    add     [bp - 14], ax
+    add     [bp - 18], ax
     mov     ax, 0
     cmp     bx, si
-    cmovl   ax, [bp - 12]
+    cmovl   ax, [bp - 16]
     add     dx, ax
 
     jmp     Plot_Line_loop
@@ -192,10 +193,5 @@ Plot_Crosshair:
     push    ax
 
     call    Plot_Line
-
-    mov     cx, 10
-    mov     dx, 10
-
-    call    Plot_Point
 
     ret
