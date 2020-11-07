@@ -22,3 +22,12 @@
     call    Plot_Line
     clear   5, 16
 %endmacro
+
+%macro circle 4
+    push    %4
+    push    %3
+    push    %1
+    push    %2
+    call    Plot_Circle
+    clear   4, 16
+%endmacro

@@ -9,7 +9,7 @@ Plot_Point:
     push    ds
     push    si
 
-    mov     bx, 0xA000              ; Video memory start addr
+    mov     bx, 0xA000              ; Set segment to video memory address (0000A000 * 16 = 000A0000)
     mov     ds, bx
 
     imul    bx, dx, 320
@@ -175,13 +175,152 @@ Plot_Line_cont:
     jmp     Plot_Line_loop
 
 
+; Draws a rectangle on the screen at the given
+; location and with the given scale and color.
+;
+; Input size: 16
+; Input:
+;       sy
+;       sx
+;       py
+;       px
+;       Color
+Plot_Rect:
+    ; Stack Frame Layout:
+    ; 
+    ; BP + 12  <- sy
+    ; BP + 10  <- sx
+    ; BP + 8   <- py
+    ; BP + 6   <- px
+    ; BP + 4   <- Color
+    ; BP + 2   <- Ret Addr
+    ; BP       <- BP
+    ; BP - 2   <- AX backup
+    ; BP - 4   <- BX backup
+    ; BP - 6   <- CX backup
+    ; BP - 8   <- DX backup
+    ; BP - 10  <- DS backup
+    ; BP - 12  <- SI backup
+    ret
+
+; Draws a circle at a specified location and with
+; a specified radius and color.
+;
+; Input size: 16
+; Input:
+;       Color
+;       Radius
+;       x
+;       y
+Plot_Circle:
+    ; Stack Frame Layout:
+    ; 
+    ; BP + 10  <- Color
+    ; BP + 8   <- Radius
+    ; BP + 6   <- x
+    ; BP + 4   <- y
+    ; BP + 2   <- Ret Addr
+    ; BP       <- BP
+    ; BP - 2   <- AX backup
+    ; BP - 4   <- BX backup
+    ; BP - 6   <- CX backup
+    ; BP - 8   <- DX backup
+    ; BP - 10  <- DS backup
+    ; BP - 12  <- SI backup
+    ; BP - 14  <- DI backup
+    ; BP - 16  <- N
+    ; BP - 18  <- N*N
+
+    push    bp
+    mov     bp, sp
+
+    push    ax
+    push    bx
+    push    cx
+    push    dx
+    push    ds
+    push    si
+    push    di
+
+    sub     sp, 4
+
+    mov     bx, 0xA000              ; Set segment to video memory address (0000A000 * 16 = 000A0000)
+    mov     ds, bx
+
+    imul    bx, [bp + 8], 2
+    add     bx, 1
+    mov     [bp - 16], bx           ; N
+
+    imul    bx, bx
+    mov     [bp - 18], bx           ; N * N
+
+    xor     bx, bx
+
+Plot_Circle_loop:
+    xor     dx, dx
+    mov     ax, bx
+
+    div     word[bp - 16]
+    mov     cx, ax                  ; Now CX contains i and DX contains j
+
+    sub     cx, [bp + 8]
+    sub     dx, [bp + 8]
+
+    mov     si, cx
+    mov     di, dx
+
+    imul    cx, cx
+    imul    dx, dx
+
+    add     cx, dx
+
+    mov     dx, [bp + 8]
+    imul    dx, dx
+    add     dx, 1
+    
+    add     si, [bp + 6]
+    add     di, [bp + 4]
+
+    imul    di, di, 320
+    add     di, si
+
+    mov     ax, 320 * 200
+    cmp     di, ax
+    cmova   di, ax
+
+    mov     ax, [ds:di]
+    cmp     cx, dx
+    cmovle  ax, [bp + 10]
+
+    mov     [ds:di], ax
+
+    add     bx, 1
+    cmp     bx, [bp - 18]
+
+    jl      Plot_Circle_loop
+
+    add     sp, 4
+
+    pop     di
+    pop     si
+    pop     ds
+    pop     dx
+    pop     cx
+    pop     bx
+    pop     ax
+
+    pop     bp
+
+    ret
+
+
 ; Draws a crosshair that splits the screen
 ; into 4 quadrants.
 ;
 ; Input: AX contains the color of the crosshair.
-Plot_Crosshair:
-    line    0, 99, 319, 99, ax
-    line    159, 0, 159, 199, ax
+Demo_Crosshair:
+    line    0, 100, 319, 100, ax
+    line    160, 0, 160, 199, ax
 
     ret
 
@@ -199,5 +338,18 @@ Demo_Lines:
     line    119, 0, 39, 99, 6
     line    0, 24, 159, 74, 7
     line    0, 74, 159, 24, 8
+
+    ret
+
+
+; Demonstrates usage of the circle drawing function.
+; 3 circles of varying sizes and colours will be drawn
+; on the bottom-left quadrant.
+;
+; Input: None
+Demo_Circles:
+    circle  15, 120, 10, 10
+    circle  40, 180, 5, 12
+    circle  90, 150, 35, 14
 
     ret

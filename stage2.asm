@@ -41,9 +41,10 @@ Stage2:
     int     10h
 
     mov     ax, 15
-    call    Plot_Crosshair
 
+    call    Demo_Crosshair
     call    Demo_Lines
+    call    Demo_Circles
 
 End_Loop:
     jmp End_Loop
@@ -53,9 +54,5 @@ A20_Fail:
 
 %include "a20msg.asm"
 
-i_buff:     times 7Fh db 0
-o_buff:     times 7Fh db 0
-cursor:     db "> "
-
 ; Pad out the boot loader stage 2 so that it will be exactly 3584 (7 * 512) bytes
-	        times 3584 - ($ - $$) db 0
+    times 3584 - ($ - $$) db 0
