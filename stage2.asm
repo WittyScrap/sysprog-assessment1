@@ -45,6 +45,7 @@ Stage2:
     call    Demo_Crosshair
     call    Demo_Lines
     call    Demo_Circles
+    call    Demo_Rects
 
 End_Loop:
     jmp End_Loop

@@ -198,10 +198,47 @@ Plot_Rect:
     ; BP - 2   <- AX backup
     ; BP - 4   <- BX backup
     ; BP - 6   <- CX backup
-    ; BP - 8   <- DX backup
     ; BP - 10  <- DS backup
-    ; BP - 12  <- SI backup
+    ; BP - 12  <- ES backup
+    ; BP - 16  <- DI backup
+    
+    push    bp
+    mov     bp, sp
+
+    push    ax 
+    push    bx 
+    push    cx
+    push    es
+    push    di
+
+    mov     ax, 0xA000          ; Destination segment is video memory
+    mov     es, ax
+    mov     bx, [bp + 8]        ; Pos Y
+    add     [bp + 12], bx       ; Set end Y instead of size Y
+
+    mov     ax, [bp + 4]        ; Color
+
+Plot_Rect_loop:
+    mov     cx, [bp + 10]       ; Size X
+    imul    di, bx, 320         ; Y offset = Y * 320
+    add     di, [bp + 6]        ; Add X pos to compute final addr
+
+    rep     stosb               ; Move cx (size x) bytes from al (color) to es:di (A000:y * 320 + x)
+
+    add     bx, 1
+    cmp     bx, [bp + 12]       ; Check against end Y
+    jl      Plot_Rect_loop
+
+    pop     di
+    pop     es
+    pop     cx
+    pop     bx 
+    pop     ax
+
+    pop     bp
+
     ret
+
 
 ; Draws a circle at a specified location and with
 ; a specified radius and color.
@@ -309,6 +346,7 @@ Plot_Circle_loop:
     pop     bx
     pop     ax
 
+    mov     sp, bp
     pop     bp
 
     ret
@@ -351,5 +389,18 @@ Demo_Circles:
     circle  15, 120, 10, 10
     circle  40, 180, 5, 12
     circle  90, 150, 35, 14
+
+    ret
+
+
+; Demonstrates usage of the rectangle drawing function.
+; 3 rectangles of varying shapes, sizes, and colours will
+; be drawn on the top-right quadrant.
+;
+; Input: None
+Demo_Rects:
+    rect    170, 10, 100, 50, 13
+    rect    180, 40, 80, 50, 11
+    rect    275, 30, 33, 17, 15
 
     ret

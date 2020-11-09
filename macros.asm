@@ -31,3 +31,13 @@
     call    Plot_Circle
     clear   4, 16
 %endmacro
+
+%macro rect 5
+    push    %4
+    push    %3
+    push    %2
+    push    %1
+    push    %5
+    call    Plot_Rect
+    clear   5, 16
+%endmacro
