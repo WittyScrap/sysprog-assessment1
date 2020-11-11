@@ -27,6 +27,7 @@
     add     sp, %1 * (%2 / 8)
 %endmacro
 
+
 ; Draws a single point
 ; Input:
 ;       r/m/imm16:       X
@@ -38,6 +39,7 @@
     mov     al, %3
     call    Plot_Point
 %endmacro
+
 
 ; Draws a line from two points
 ; Input:
