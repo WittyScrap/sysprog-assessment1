@@ -119,10 +119,17 @@ Plot_Line_loop:
     mov     byte[ds:bx], al         ; Plot point
 
     ; if x0 = x1 and y0 = y1 break
-    cmp     cx, [bp + 10]
-    jne     Plot_Line_cont
-    cmp     dx, [bp + 12]
-    jne     Plot_Line_cont
+    push    ax
+    cmp     cx, [bp + 10]           ; Compare X0 with X1
+    lahf
+    mov     al, ah                  ; Store flags result in al
+    cmp     dx, [bp + 12]           ; Compare Y0 with Y1
+    lahf                            ; Store flags result in ah
+    and     ah, al                  ; AND ah and al (if ZF was 0 in either it will now be 0)
+    and     ah, 64 ; Where ZF is    ; AND ah with 01000000 (where ZF is stored)
+    sahf                            ; Store flags back
+    pop     ax
+    jnz     Plot_Line_cont          ; If the ZF not set it means we can continue
     
     add     sp, 6                   ; Clear local variables
 
