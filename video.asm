@@ -175,6 +175,52 @@ Plot_Line_cont:
     jmp     Plot_Line_loop
 
 
+; Plots a polygon composed of multiple lines.
+;
+; Polygon layout (16-bit per component):
+;               X0, Y0,
+;               X1, Y1,
+;               X2, Y2,
+;               ...
+;               XN, YN
+;
+; Input size: 16
+; Input:
+;       DS <- Set to the segment in which the layout buffer is located
+;       SI <- Pointer to polygon layout buffer
+;       AX <- Number of points
+;       DX <- Color
+Plot_Poly:
+    push    bp
+    mov     bp, sp
+
+    sub     ax, 1               ; Discards first point
+    
+    mov     bx, ss
+    mov     es, bx              ; Set destination segment to the stack segment
+
+    sub     sp, 10              ; Reserve space for input stack frame
+    mov     [bp - 10], dx       ; Store color
+
+Plot_Poly_loop:
+    mov     cx, 4               ; 4 words to be moved (Y1, X1, Y0, X0)
+    lea     di, [bp - 8]        ; Set destination index to base pointer
+
+    rep     movsw               ; Move cx (4) words from ds:si (xx:ptr to data) to es:di (ss:bp), incrementing both in the process.
+    call    Plot_Line           ; Plot the line
+
+    sub     si, 4               ; Get back the previous two points to carry on
+
+    sub     ax, 1 
+    test    ax, ax
+    jnz     Plot_Poly_loop
+
+    mov     sp, bp
+    pop     bp
+
+    ret
+
+
 ; Draws a rectangle on the screen at the given
 ; location and with the given scale and color.
 ;
@@ -208,8 +254,11 @@ Plot_Rect:
     push    ax 
     push    bx 
     push    cx
+    push    dx
     push    es
     push    di
+
+    mov     dx, 320 * 200
 
     mov     ax, 0xA000          ; Destination segment is video memory
     mov     es, ax
@@ -220,6 +269,8 @@ Plot_Rect:
 
 Plot_Rect_loop:
     mov     cx, [bp + 10]       ; Size X
+    cmp     cx, dx
+    cmova   cx, dx              ; Clamping cx using "above" so that values < 0 are clamped to 320 * 200
     imul    di, bx, 320         ; Y offset = Y * 320
     add     di, [bp + 6]        ; Add X pos to compute final addr
 
@@ -231,6 +282,7 @@ Plot_Rect_loop:
 
     pop     di
     pop     es
+    pop     dx
     pop     cx
     pop     bx 
     pop     ax
@@ -404,3 +456,55 @@ Demo_Rects:
     rect    275, 30, 33, 17, 15
 
     ret
+
+
+; Demonstrates usage of the polygon drawing function.
+; 3 Polygons of different shapes, sizes, and colours will
+; be drawn on the bottom-right quadrant.
+;
+; Input: None
+Demo_Polys:
+    poly    0, poly_rect, 5, 13
+    poly    0, poly_star, 11, 14
+    poly    0, poly_bubble, 12, 11
+    poly    0, poly_mark, 2, 11
+    point   220, 178, 11
+
+
+    ret
+
+
+; Polygon data
+poly_rect:      dw 170, 110
+                dw 200, 110
+                dw 200, 130
+                dw 170, 130
+                dw 170, 110
+
+poly_star:      dw 274, 114
+                dw 283, 141
+                dw 310, 142
+                dw 288, 159
+                dw 296, 186
+                dw 274, 170
+                dw 252, 186
+                dw 260, 159
+                dw 238, 142
+                dw 265, 141
+                dw 274, 114
+
+poly_bubble:    dw 205, 152
+                dw 237, 152
+                dw 241, 156
+                dw 241, 180
+                dw 238, 183
+                dw 216, 183
+                dw 213, 188
+                dw 208, 183
+                dw 205, 183
+                dw 201, 180
+                dw 201, 156
+                dw 205, 152
+
+poly_mark:      dw 220, 155
+                dw 220, 172

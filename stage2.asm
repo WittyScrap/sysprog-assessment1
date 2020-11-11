@@ -46,6 +46,7 @@ Stage2:
     call    Demo_Lines
     call    Demo_Circles
     call    Demo_Rects
+    call    Demo_Polys
 
 End_Loop:
     jmp End_Loop

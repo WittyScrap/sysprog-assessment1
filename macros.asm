@@ -1,18 +1,51 @@
+; Calculates the absolute value of a number.
+; Input:
+;       r/m8 - r/m32:   Value to get an absolute value for
+;       r8 - r32:       Backup value, original value will be stored here
 %macro abs 2
     mov     %2, %1
     neg     %1
     cmovl   %1, %2
 %endmacro
 
+
+; Calculates the sign of a number.
+; Input:
+;       r/m8 - r/m32:   Value to retrieve the sign for
+;       imm8 - imm32:   Size of the operation
 %macro sign 2
     sar     %1, %2 - 1
     or      %1, 1
 %endmacro
 
+
+; Clears an input stack frame
+; Input:
+;       imm8 - imm32:   Number of variables to clear
+;       imm8 - imm32:   Size of the operation
 %macro clear 2
     add     sp, %1 * (%2 / 8)
 %endmacro
 
+; Draws a single point
+; Input:
+;       r/m/imm16:       X
+;       r/m/imm16:       Y
+;       r/m/imm8:        Color
+%macro point 3
+    mov     cx, %1
+    mov     dx, %2
+    mov     al, %3
+    call    Plot_Point
+%endmacro
+
+; Draws a line from two points
+; Input:
+;       r/imm16:        X0
+;       r/imm16:        Y0
+;       r/imm16:        X1
+;       r/imm16:        Y1
+;       r/m16:          Color
 %macro line 5
     push    %4
     push    %3
@@ -23,6 +56,14 @@
     clear   5, 16
 %endmacro
 
+
+; Draws a filled circle on a point with a given
+; radius.
+; Input:
+;       r/imm16:        X
+;       r/imm16:        Y
+;       r/imm16:        Radius
+;       r/imm16:        Color
 %macro circle 4
     push    %4
     push    %3
@@ -32,6 +73,14 @@
     clear   4, 16
 %endmacro
 
+
+; Draws a filled rectangle with a position and size
+; Input:
+;       r/imm16:        X
+;       r/imm16:        Y
+;       r/imm16:        SX
+;       r/imm16:        SY
+;       r/imm16:        Color
 %macro rect 5
     push    %4
     push    %3
@@ -40,4 +89,21 @@
     push    %5
     call    Plot_Rect
     clear   5, 16
+%endmacro
+
+
+; Draws a polygon consisting of a series of interconnected
+; lines.
+; Input:
+;       r/m/imm16:      Segment in which the polygon data is stored
+;       r/m/imm16:      Pointer to polygon data
+;       r/m/imm16:      Number of vertices in polygon
+;       r/m/imm16:      Color          
+%macro poly 4
+    mov     bx, %1
+    mov     ds, bx
+    mov     si, %2
+    mov     ax, %3
+    mov     dx, %4
+    call    Plot_Poly
 %endmacro
