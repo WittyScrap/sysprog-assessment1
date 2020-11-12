@@ -1,29 +1,37 @@
-; Converts a number to a base-10 string representation.
+; Converts an 8-bit or 16-bit number to a base-10 string representation.
 ;
-; INPUT: SI points to a preallocated output buffer.
+; INPUT: DI points to an output buffer.
 ;        AX contains the number to be converted.
 ; OUTPUT: Final string will be stored in the buffer pointed to by SI.
 To_String_Dec:
-    mov     cx, 10
-    mov     bp, sp
+    mov     bx, 10
+    xor     cx, cx
+    mov     si, To_String_Buff + 5
 
-To_String_Dec_Next:
+To_String_Dec_loop:
     xor     dx, dx
-    div     cx
+    sub     si, 1
+    div     bx
     add     dx, '0'
-    push    dx
+    mov     byte[si], dl
+    add     cx, 1
     test    ax, ax
-    jnz     To_String_Dec_Next
+    jnz     To_String_Dec_loop
 
-To_String_Dec_Write:
-    pop     ax
-    mov     [si], al
-    add     si, 1
-    cmp     bp, sp
-    jne     To_String_Dec_Write
-    mov     byte[si], 0
+    ; Move cx bytes from ds:si (temporary buffer) to es:di (output buffer)
+    mov     dx, cx
+    rep     movsb
+    mov     byte[di], 0         ; Null terminator
+    sub     di, dx
 
     ret
+
+To_String_Buff:
+    times   5 db 0              ; This is placed right after a ret and will never be hit
+                                ; if the file is included correctly (which it absolutely should
+                                ; be). The registers we are dealing with are 16-bit, so there are
+                                ; no situations in which the output number could be larger than 5
+                                ; digits, so no code can be overwritten.
 
 
 ; Converts a number to a 4-digit base-16 string representation and prints it.

@@ -48,13 +48,25 @@ Stage2:
     call    Demo_Rects
     call    Demo_Polys
 
-End_Loop:
-    jmp End_Loop
+    mov     si, Image
 
+End_Loop:
+    jmp     End_Loop
+ 
 A20_Fail:
     hlt                                 ; Could not enable A20 line, halt here
 
 %include "a20msg.asm"
 
-; Pad out the boot loader stage 2 so that it will be exactly 3584 (7 * 512) bytes
-    times 3584 - ($ - $$) db 0
+Number:     ; This is temporary
+            db 01h, 02h, 03h, 04h, 05h, 06h, 07h, 08h, 09h, 0Ah
+
+; Image is stored at relative address 0xA00 (5 sectors in), to get there we pad for exactly 5 sectors, minus
+; one sector which is the one dedicated to the boot sector. This allows us to get the exact absolute offset 
+; into the bootloader.
+            times 512 * 4 - ($ - $$) db 0
+
+Image: ; Now the image will be loaded here
+
+; Pad out the boot loader stage 2 so that it will be exactly 7 sectors
+            times 512 * 7 - ($ - $$) db 0

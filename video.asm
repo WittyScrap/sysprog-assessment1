@@ -211,7 +211,7 @@ Plot_Poly:
 
 Plot_Poly_loop:
     mov     cx, 4               ; 4 words to be moved (Y1, X1, Y0, X0)
-    lea     di, [bp - 8]        ; Set destination index to base pointer
+    lea     di, [bp - 8]        ; Set destination index to stack pointer, minus a word to not overwrite color
 
     rep     movsw               ; Move cx (4) words from ds:si (xx:ptr to data) to es:di (ss:bp), incrementing both in the process.
     call    Plot_Line           ; Plot the line
@@ -359,36 +359,36 @@ Plot_Circle_loop:
     div     word[bp - 16]
     mov     cx, ax                  ; Now CX contains i and DX contains j
 
-    sub     cx, [bp + 8]
-    sub     dx, [bp + 8]
+    sub     cx, [bp + 8]            ; Subtract radius to obtain X
+    sub     dx, [bp + 8]            ; Subtract radius to obtain Y
 
-    mov     si, cx
-    mov     di, dx
+    mov     si, cx                  ; Backup X into SI
+    mov     di, dx                  ; Backup Y into DI
 
-    imul    cx, cx
-    imul    dx, dx
-
-    add     cx, dx
+    imul    cx, cx                  ; We are going to be comparing the result of 
+    imul    dx, dx                  ; x*x + y*y to r*r to test whether a specific
+                                    ; pixel at a given x, y location is inside the
+    add     cx, dx                  ; circle we're trying to draw.
 
     mov     dx, [bp + 8]
-    imul    dx, dx
-    add     dx, 1
+    imul    dx, dx                  ; Radius squared
+    add     dx, 1                   ; Add 1 to include points on the edge of the circle
     
     add     si, [bp + 6]
     add     di, [bp + 4]
 
     imul    di, di, 320
-    add     di, si
+    add     di, si                  ; Compute final video offset addr (original x, y are used here)
 
     mov     ax, 320 * 200
     cmp     di, ax
-    cmova   di, ax
-
-    mov     ax, [ds:di]
+    cmova   di, ax                  ; Clamp values so that we can't write past the end of the video memory
+                                    ; boundaries.
+    mov     ax, [ds:di]             ; Now we poll the original value of the current pixel from memory
     cmp     cx, dx
-    cmovle  ax, [bp + 10]
+    cmovle  ax, [bp + 10]           ; If the point is inside the circle, override that with the circle's color
 
-    mov     [ds:di], ax
+    mov     [ds:di], ax             ; Now set the pixel again, if we're outside the circle nothing will change.
 
     add     bx, 1
     cmp     bx, [bp - 18]
@@ -411,6 +411,24 @@ Plot_Circle_loop:
     ret
 
 
+; Draws a 4bpp bitmap located at a custom address of
+; any given size. Keep in mind the size/location are still
+; limited by other factors, such as the size of the screen
+; and the size of the bootloader.
+;
+; Input:
+;       DS <- Set to the segment in which the image resides
+;       SI <- Set to the address in which the image resides
+;       AX <- Set to the X location of the image
+;       BX <- Set to the Y location of the image
+;
+; Remarks:
+;       Use the default image.bmp provided for a special
+;       surprise!
+Draw_Image:
+    
+
+
 ; Draws a crosshair that splits the screen
 ; into 4 quadrants.
 ;
@@ -427,14 +445,14 @@ Demo_Crosshair:
 ;
 ; Input: None
 Demo_Lines:
-    line    0, 0, 159, 99, 1
-    line    159, 0, 0, 99, 2
-    line    79, 0, 79, 99, 3
-    line    0, 49, 159, 49, 4
-    line    39, 0, 119, 99, 5
-    line    119, 0, 39, 99, 6
-    line    0, 24, 159, 74, 7
-    line    0, 74, 159, 24, 8
+    line    0, 0, 159, 99, 1001b
+    line    159, 0, 0, 99, 1010b
+    line    79, 0, 79, 99, 1011b
+    line    0, 49, 159, 49, 1100b
+    line    39, 0, 119, 99, 1101b
+    line    119, 0, 39, 99, 1110b
+    line    0, 24, 159, 74, 1111b
+    line    0, 74, 159, 24, 0100b
 
     ret
 
@@ -445,9 +463,9 @@ Demo_Lines:
 ;
 ; Input: None
 Demo_Circles:
-    circle  15, 120, 10, 10
-    circle  40, 180, 5, 12
-    circle  90, 150, 35, 14
+    circle  15, 120, 10, 1010b
+    circle  40, 180, 5, 1100b
+    circle  90, 150, 35, 1110b
 
     ret
 
@@ -458,9 +476,9 @@ Demo_Circles:
 ;
 ; Input: None
 Demo_Rects:
-    rect    170, 10, 100, 50, 13
-    rect    180, 40, 80, 50, 11
-    rect    275, 30, 33, 17, 15
+    rect    170, 10, 100, 50, 0101b
+    rect    180, 40, 80, 50, 1011b
+    rect    275, 30, 33, 60, 1111b
 
     ret
 
@@ -471,11 +489,11 @@ Demo_Rects:
 ;
 ; Input: None
 Demo_Polys:
-    poly    0, poly_rect, 5, 13
-    poly    0, poly_star, 11, 14
-    poly    0, poly_bubble, 12, 11
-    poly    0, poly_mark, 2, 11
-    point   220, 178, 11
+    poly    0, poly_rect, 5, 1101b
+    poly    0, poly_star, 11, 1110b
+    poly    0, poly_bubble, 12, 1011b
+    poly    0, poly_mark, 2, 1011b
+    point   220, 178, 1011b
 
 
     ret
