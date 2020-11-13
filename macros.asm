@@ -3,9 +3,9 @@
 ;       r/m8 - r/m32:   Value to get an absolute value for
 ;       r8 - r32:       Backup value, original value will be stored here
 %macro abs 2
-    mov     %2, %1
-    neg     %1
-    cmovl   %1, %2
+    mov     %2, %1          ; Save value
+    neg     %1              ; Negate it
+    cmovl   %1, %2          ; If SF is now set, it means the original value was positive; move it back.
 %endmacro
 
 
@@ -108,4 +108,19 @@
     mov     ax, %3
     mov     dx, %4
     call    Plot_Poly
+%endmacro
+
+
+; Draws a picture at a given location. DS must be set to the
+; sector in which the image is stored.
+;
+; Input:
+;       r/m16:          Pointer to where the picture is stored
+;       r/imm16:        X location of where to draw the picture
+;       r/imm16:        Y location of where to draw the picture
+%macro image 3
+    mov     si, %1
+    mov     ax, %2
+    mov     bx, %3
+    call    Draw_Image
 %endmacro

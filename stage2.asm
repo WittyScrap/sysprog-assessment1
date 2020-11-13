@@ -48,7 +48,7 @@ Stage2:
     call    Demo_Rects
     call    Demo_Polys
 
-    mov     si, Image
+    image   Image, 144, 84
 
 End_Loop:
     jmp     End_Loop
@@ -66,7 +66,7 @@ Number:     ; This is temporary
 ; into the bootloader.
             times 512 * 4 - ($ - $$) db 0
 
-Image: ; Now the image will be loaded here
+Image: ; Now the image will be loaded here by dd
 
 ; Pad out the boot loader stage 2 so that it will be exactly 7 sectors
             times 512 * 7 - ($ - $$) db 0

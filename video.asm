@@ -2,9 +2,10 @@
 
 ; Plots a single pixel of a specified color.
 ;
-; Input: AL contains the color of the pixel.
-;        CX contains the pixel's X coordinate.
-;        DX contains the pixel's Y coordinate.
+; Input: 
+;       AL <- The color of the pixel.
+;       CX <- The pixel's X coordinate.
+;       DX <- The pixel's Y coordinate.
 Plot_Point:
     push    ds
     push    si
@@ -198,6 +199,12 @@ Plot_Line_cont:
 ;       AX <- Number of points
 ;       DX <- Color
 Plot_Poly:
+    push    ax
+    push    bx
+    push    cx
+    push    es
+    push    ds
+
     push    bp
     mov     bp, sp
 
@@ -224,6 +231,12 @@ Plot_Poly_loop:
 
     mov     sp, bp
     pop     bp
+
+    pop     ds
+    pop     es
+    pop     cx
+    pop     bx
+    pop     ax
 
     ret
 
@@ -412,9 +425,10 @@ Plot_Circle_loop:
 
 
 ; Draws a 4bpp bitmap located at a custom address of
-; any given size. Keep in mind the size/location are still
-; limited by other factors, such as the size of the screen
-; and the size of the bootloader.
+; any given size that is divisible by 4. Keep in mind
+; the size/location are still limited by other factors,
+; such as the size of the screen and the size of the
+; bootloader.
 ;
 ; Input:
 ;       DS <- Set to the segment in which the image resides
@@ -426,7 +440,38 @@ Plot_Circle_loop:
 ;       Use the default image.bmp provided for a special
 ;       surprise!
 Draw_Image:
-    
+    push    es
+    push    cx
+    push    dx
+    push    bp                      ; We're gonna borrow you as a general purpose register
+
+    mov     bp, si
+
+    mov     cx, 0xA000
+    mov     es, cx
+
+    mov     dx, bx                  ; This will be our height target
+    add     bx, word[bp + 16h]      ; Vertical height of the bitmap since the last row is the first because bitmap is weird
+    add     si, word[bp + 0Ah]      ; Add PixelDataOffset to SI to get picture start addr    
+
+Draw_Image_loop:
+    mov     cx, word[bp + 12h]      ; Set to the Horizontal width of the bitmap
+
+    imul    di, bx, 320
+    add     di, ax
+
+    rep     movsb                   ; memcpy this row...
+
+    sub     bx, 1
+    cmp     bx, dx
+    jg      Draw_Image_loop
+
+    pop     bp
+    pop     dx
+    pop     cx
+    pop     es
+
+    ret
 
 
 ; Draws a crosshair that splits the screen
