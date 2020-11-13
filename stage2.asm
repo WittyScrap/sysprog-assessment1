@@ -20,6 +20,8 @@ start:
 %include "video.asm"
 
 Stage2:
+    mov     [BootDevice], dl            ; Save boot device
+
     mov     si, msg_stage2              ; Print stage 2 message
     call    Console_WriteLine
 
@@ -48,6 +50,19 @@ Stage2:
     call    Demo_Rects
     call    Demo_Polys
 
+    ; Load the next 5 sectors into memory
+    mov		ah, 2						; BIOS read sector function
+	mov		al, 5						; Read 5 sectors (enough to fit a ~2kb picture)
+	mov		bx, Image					; Load into address ES:BX (0000:Image)
+	mov		ch, 0						; Use cylinder 0
+	mov		dh, 0						; Use head 0
+	mov		dl, [BootDevice]			
+	mov		cl, 8						; Start reading at sector 8 (one after the 7 loaded sectors, where the image resides)
+	int		13h
+	cmp		al, 5						; int 13h (ah:2) returns the number of sectors read in al. If this is not 7, fail.
+	jne		End_Loop
+
+    ; Now draw the loaded image
     image   Image, 144, 84
 
 End_Loop:
@@ -58,15 +73,12 @@ A20_Fail:
 
 %include "a20msg.asm"
 
-Number:     ; This is temporary
-            db 01h, 02h, 03h, 04h, 05h, 06h, 07h, 08h, 09h, 0Ah
-
-; Image is stored at relative address 0xA00 (5 sectors in), to get there we pad for exactly 5 sectors, minus
-; one sector which is the one dedicated to the boot sector. This allows us to get the exact absolute offset 
-; into the bootloader.
-            times 512 * 4 - ($ - $$) db 0
-
-Image: ; Now the image will be loaded here by dd
+; Save the boot device so we can load the image again
+BootDevice: db 0
 
 ; Pad out the boot loader stage 2 so that it will be exactly 7 sectors
             times 512 * 7 - ($ - $$) db 0
+
+; Image is stored at the end of the 7 sectors, in an additional 4 sectors.
+; These are loaded in memory during stage 2.
+Image: ; Now the image will be loaded here by dd
