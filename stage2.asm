@@ -29,7 +29,7 @@ Stage2:
 	mov		cl, 9						; Start reading at sector 9 (one after the 7 loaded sectors, where the image resides. We are currently in sector 2)
 	int		13h
 	cmp		al, 5						; int 13h (ah:2) returns the number of sectors read in al. If this is not 5, fail.
-	jne		End_Loop
+	jne		A20_Fail
 
     mov     si, msg_stage2              ; Print stage 2 message
     call    Console_WriteLine
@@ -51,8 +51,40 @@ Stage2:
     mov     al, 13h
     int     10h
 
-    mov     ax, 15
 
+Render_Loop:
+    ; DVD bouncing logo logic
+    mov     ax, word[Location]
+    mov     bx, word[Location + 2]
+
+    mov     cx, word[Velocity]
+    mov     dx, word[Velocity + 2]
+
+    add     ax, cx
+    add     bx, dx
+
+    mov     si, cx
+    mov     di, dx
+
+    neg     si
+    neg     di
+
+    cmp     ax, 320 - 32
+    cmova   cx, si
+
+    cmp     bx, 200 - 32
+    cmova   dx, di
+
+    mov     word[Velocity], cx
+    mov     word[Velocity + 2], dx
+
+    mov     word[Location], ax
+    mov     word[Location + 2], bx
+
+    mov     ax, 0
+    call    Clear_Color
+
+    mov     ax, 15
     call    Demo_Crosshair
     call    Demo_Lines
     call    Demo_Circles
@@ -60,15 +92,29 @@ Stage2:
     call    Demo_Polys
 
     ; Now draw the loaded image
-    image   Image, 144, 84
+    image   Image, word[Location], word[Location + 2]
 
-End_Loop:
-    jmp     End_Loop
- 
+    call    Present
+
+    mov     cx, 0xFFFF
+
+Waste_Time:
+    nop
+    nop
+    nop
+    nop
+    loop    Waste_Time
+
+    jmp     Render_Loop
+
 A20_Fail:
     hlt                                 ; Could not enable A20 line, halt here
 
 %include "a20msg.asm"
+
+; Location and velocity of the picture
+Location:   dw 0, 0
+Velocity:   dw 1, 1
 
 ; Pad out the boot loader stage 2 so that it will be exactly 7 sectors
             times 512 * 7 - ($ - $$) db 0
