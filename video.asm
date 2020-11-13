@@ -425,9 +425,12 @@ Plot_Circle_loop:
 
 
 ; Draws a 4bpp bitmap located at a custom address of
-; any given size that is divisible by 4. Keep in mind
-; the size/location are still limited by other factors,
-; such as the size of the screen and the size of the
+; any given size that is divisible by 4. The bitmap must
+; be indexed and the palette must match the standard VGA
+; palette.
+;
+; Keep in mind the size/location are still limited by other
+; factors, such as the size of the screen and the size of the
 ; bootloader.
 ;
 ; Input:
@@ -473,6 +476,33 @@ Draw_Image_loop:
 
     ret
 
+
+; Clears the screen using a given color.
+;
+; Input:
+;       AX <- The color to screen the screen with.
+Clear_Color:
+    push    es
+    push    cx
+    push    di
+
+    push    ax
+
+    mov     ax, 0xA000
+    mov     es, ax
+    
+    pop     ax
+
+    xor     di, di
+    mov     cx, 320 * 200 / 2   ; Whole screen
+    rep     stosw               ; memset the whole screen with AX (color)
+
+    pop     di
+    pop     cx
+    pop     es
+
+    ret
+    
 
 ; Draws a crosshair that splits the screen
 ; into 4 quadrants.

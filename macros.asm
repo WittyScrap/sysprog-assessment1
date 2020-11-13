@@ -122,5 +122,5 @@
     mov     si, %1
     mov     ax, %2
     mov     bx, %3
-    call    Draw_Image
+    call    Draw_Image 
 %endmacro

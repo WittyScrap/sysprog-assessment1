@@ -20,7 +20,16 @@ start:
 %include "video.asm"
 
 Stage2:
-    mov     [BootDevice], dl            ; Save boot device
+    ; Load the next 5 sectors into memory
+    mov		ah, 2						; BIOS read sector function
+	mov		al, 5						; Read 5 sectors (enough to fit a ~2kb picture)
+	mov		bx, Image					; Load into address ES:BX (0000:Image)
+	mov		ch, 0						; Use cylinder 0
+	mov		dh, 0						; Use head 0			
+	mov		cl, 9						; Start reading at sector 9 (one after the 7 loaded sectors, where the image resides. We are currently in sector 2)
+	int		13h
+	cmp		al, 5						; int 13h (ah:2) returns the number of sectors read in al. If this is not 5, fail.
+	jne		End_Loop
 
     mov     si, msg_stage2              ; Print stage 2 message
     call    Console_WriteLine
@@ -50,18 +59,6 @@ Stage2:
     call    Demo_Rects
     call    Demo_Polys
 
-    ; Load the next 5 sectors into memory
-    mov		ah, 2						; BIOS read sector function
-	mov		al, 5						; Read 5 sectors (enough to fit a ~2kb picture)
-	mov		bx, Image					; Load into address ES:BX (0000:Image)
-	mov		ch, 0						; Use cylinder 0
-	mov		dh, 0						; Use head 0
-	mov		dl, [BootDevice]			
-	mov		cl, 8						; Start reading at sector 8 (one after the 7 loaded sectors, where the image resides)
-	int		13h
-	cmp		al, 5						; int 13h (ah:2) returns the number of sectors read in al. If this is not 7, fail.
-	jne		End_Loop
-
     ; Now draw the loaded image
     image   Image, 144, 84
 
@@ -72,9 +69,6 @@ A20_Fail:
     hlt                                 ; Could not enable A20 line, halt here
 
 %include "a20msg.asm"
-
-; Save the boot device so we can load the image again
-BootDevice: db 0
 
 ; Pad out the boot loader stage 2 so that it will be exactly 7 sectors
             times 512 * 7 - ($ - $$) db 0

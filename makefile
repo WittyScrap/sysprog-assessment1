@@ -18,8 +18,8 @@ bootloader.img: boot.bin stage2.bin
 	dd if=/dev/zero of=bootloader.img count=10000
 	dd if=boot.bin of=bootloader.img conv=notrunc
 	dd if=stage2.bin of=bootloader.img seek=1 conv=notrunc
-	# Append the image 7 sectors in
-	dd if=image.bmp of=bootloader.img seek=7 conv=notrunc
+	# Append the image after the 7 loaded sectors
+	dd if=image.bmp of=bootloader.img seek=8 conv=notrunc
 
 # Note that both targets qemu and qemu-gdb require that an XServer is running
 # On the virtual machines used for this module, VcXsrv runs on startup of the VM
