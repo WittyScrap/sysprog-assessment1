@@ -10,7 +10,7 @@ Plot_Point:
     push    ds
     push    si
 
-    mov     bx, 0x9000              ; Set segment to video memory address (0000A000 * 16 = 000A0000)
+    mov     bx, Back_Buff_Segment              ; Set segment to video memory address (0000A000 * 16 = 000A0000)
     mov     ds, bx
 
     imul    bx, dx, 320
@@ -70,7 +70,7 @@ Plot_Line:
 
     sub     sp, 6
 
-    mov     bx, 0x9000              ; Set segment to video memory address (0000A000 * 16 = 000A0000)
+    mov     bx, Back_Buff_Segment              ; Set segment to video memory address (0000A000 * 16 = 000A0000)
     mov     ds, bx
 
     ; dx := abs(x1 - x0)
@@ -280,7 +280,7 @@ Plot_Rect:
 
     mov     dx, 320 * 200
 
-    mov     ax, 0x9000          ; Destination segment is video memory
+    mov     ax, Back_Buff_Segment
     mov     es, ax
     mov     bx, [bp + 8]        ; Pos Y
     add     [bp + 12], bx       ; Set end Y instead of size Y
@@ -353,7 +353,7 @@ Plot_Circle:
 
     sub     sp, 4
 
-    mov     bx, 0x9000              ; Set segment to video memory address (0000A000 * 16 = 000A0000)
+    mov     bx, Back_Buff_Segment
     mov     ds, bx
 
     imul    bx, [bp + 8], 2
@@ -450,7 +450,7 @@ Draw_Image:
 
     mov     bp, si
 
-    mov     cx, 0x9000
+    mov     cx, Back_Buff_Segment
     mov     es, cx
 
     mov     dx, bx                  ; This will be our height target
@@ -488,7 +488,7 @@ Clear_Color:
 
     push    ax
 
-    mov     ax, 0x9000
+    mov     ax, Back_Buff_Segment
     mov     es, ax
     
     pop     ax
@@ -517,7 +517,7 @@ Present:
     mov     cx, 0xA000
     mov     es, cx
 
-    mov     cx, 0x9000
+    mov     cx, Back_Buff_Segment
     mov     ds, cx
 
     mov     cx, 320 * 200 / 2

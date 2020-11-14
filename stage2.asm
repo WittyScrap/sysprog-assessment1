@@ -50,8 +50,7 @@ Stage2:
     xor     ah, ah
     mov     al, 13h
     int     10h
-
-
+    
 Render_Loop:
     ; DVD bouncing logo logic
     mov     ax, word[Location]
@@ -59,9 +58,6 @@ Render_Loop:
 
     mov     cx, word[Velocity]
     mov     dx, word[Velocity + 2]
-
-    add     ax, cx
-    add     bx, dx
 
     mov     si, cx
     mov     di, dx
@@ -74,6 +70,9 @@ Render_Loop:
 
     cmp     bx, 200 - 32
     cmova   dx, di
+
+    add     ax, cx
+    add     bx, dx
 
     mov     word[Velocity], cx
     mov     word[Velocity + 2], dx
@@ -94,19 +93,26 @@ Render_Loop:
     ; Now draw the loaded image
     image   Image, word[Location], word[Location + 2]
 
+    ; Blit back buffer on front buffer
     call    Present
 
-    mov     cx, 0xFFFF
 
+    ; I don't have a system timer implemented, so to slow down the
+    ; animation I'll just waste CPU cycles looping in place a bit.
+    mov     cx, 0xFFFF
 Waste_Time:
-    nop
-    nop
-    nop
-    nop
     loop    Waste_Time
+
+    ; Turns out one waste of time was not quite enough to slow it
+    ; down to an acceptable level, so I'll waste time again.
+    mov     cx, 0xFFFF
+Waste_More_Time:
+    loop    Waste_More_Time
 
     jmp     Render_Loop
 
+;
+; General failure state
 A20_Fail:
     hlt                                 ; Could not enable A20 line, halt here
 
@@ -121,4 +127,7 @@ Velocity:   dw 1, 1
 
 ; Image is stored at the end of the 7 sectors, in an additional 4 sectors.
 ; These are loaded in memory during stage 2.
-Image: ; Now the image will be loaded here by dd
+Image:      times 512 * 5 db 0          ; Now the image will be loaded here by dd
+
+; Segment that will be used for the back buffer
+Back_Buff_Segment: equ 1000h
