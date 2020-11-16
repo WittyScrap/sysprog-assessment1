@@ -50,9 +50,15 @@ Stage2:
     xor     ah, ah
     mov     al, 13h
     int     10h
-    
+
 Render_Loop:
     ; DVD bouncing logo logic
+    ;
+    ; This demo assumes that the image is 32x32, if
+    ; it is not, change the `cmp ax, 320 - 32` and
+    ; `cmp bx, 200 - 32` lines to `cmp ax, 300 - <width>`
+    ; and `cmp bx, 200 - <height>` respectively.
+    ;
     mov     ax, word[Location]
     mov     bx, word[Location + 2]
 
@@ -70,7 +76,7 @@ Render_Loop:
 
     cmp     bx, 200 - 32
     cmova   dx, di
-
+ 
     add     ax, cx
     add     bx, dx
 
@@ -80,6 +86,7 @@ Render_Loop:
     mov     word[Location], ax
     mov     word[Location + 2], bx
 
+    ; Rendering
     mov     ax, 0
     call    Clear_Color
 
@@ -92,22 +99,21 @@ Render_Loop:
 
     ; Now draw the loaded image
     image   Image, word[Location], word[Location + 2]
-
+ 
     ; Blit back buffer on front buffer
     call    Present
 
-
     ; I don't have a system timer implemented, so to slow down the
     ; animation I'll just waste CPU cycles looping in place a bit.
-    mov     cx, 0xFFFF
-Waste_Time:
-    loop    Waste_Time
+    mov     ax, 4
 
-    ; Turns out one waste of time was not quite enough to slow it
-    ; down to an acceptable level, so I'll waste time again.
+Waste_Time:
     mov     cx, 0xFFFF
-Waste_More_Time:
-    loop    Waste_More_Time
+
+Waste_Time_loop:
+    loop    Waste_Time_loop
+    sub     ax, 1
+    jnz     Waste_Time
 
     jmp     Render_Loop
 
