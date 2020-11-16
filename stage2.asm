@@ -97,7 +97,7 @@ Render_Loop:
     call    Demo_Rects
     call    Demo_Polys
 
-    ; Now draw the loaded image
+    ; ; Now draw the loaded image
     image   Image, word[Location], word[Location + 2]
  
     ; Blit back buffer on front buffer

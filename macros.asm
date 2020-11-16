@@ -19,15 +19,6 @@
 %endmacro
 
 
-; Clears an input stack frame
-; Input:
-;       imm8 - imm32:   Number of variables to clear
-;       imm8 - imm32:   Size of the operation
-%macro clear 2
-    add     sp, %1 * (%2 / 8)
-%endmacro
-
-
 ; Draws a single point
 ; Input:
 ;       r/m/imm16:       X
@@ -55,7 +46,6 @@
     push    %1
     push    %5
     call    Plot_Line
-    clear   5, 16
 %endmacro
 
 
@@ -72,7 +62,6 @@
     push    %1
     push    %2
     call    Plot_Circle
-    clear   4, 16
 %endmacro
 
 
@@ -90,7 +79,6 @@
     push    %1
     push    %5
     call    Plot_Rect
-    clear   5, 16
 %endmacro
 
 

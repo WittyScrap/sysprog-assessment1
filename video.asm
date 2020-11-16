@@ -141,10 +141,9 @@ Plot_Line_loop:
     pop     bx
     pop     ax
 
-    mov     sp, bp
     pop     bp
 
-    ret
+    ret     10
 
 Plot_Line_cont:
     xor     ax, ax
@@ -224,6 +223,7 @@ Plot_Poly_loop:
     call    Plot_Line           ; Plot the line
 
     sub     si, 4               ; Get back the previous two points to carry on
+    sub     sp, 10              ; Get stack pointer back where it was (reserving 5 input vars)
 
     sub     ax, 1 
     test    ax, ax
@@ -309,7 +309,7 @@ Plot_Rect_loop:
 
     pop     bp
 
-    ret
+    ret     10
 
 
 ; Draws a circle at a specified location and with
@@ -421,7 +421,7 @@ Plot_Circle_loop:
     mov     sp, bp
     pop     bp
 
-    ret
+    ret     8
 
 
 ; Draws a 4bpp bitmap located at a custom address of
