@@ -127,7 +127,6 @@ Plot_Line_loop:
     cmp     dx, [bp + 12]           ; Compare Y0 with Y1
     lahf                            ; Store flags result in ah
     and     ah, al                  ; AND ah and al (if ZF was 0 in either it will now be 0)
-    and     ah, 64 ; Where ZF is    ; AND ah with 01000000 (where ZF is stored)
     sahf                            ; Store flags back
     pop     ax
     jnz     Plot_Line_cont          ; If the ZF not set it means we can continue
